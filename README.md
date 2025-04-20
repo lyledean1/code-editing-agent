@@ -1,6 +1,6 @@
 # Code Editing Agent
 
-A lightweight agent for automated code editing and manipulation tasks. From the [tutorial](https://ampcode.com/how-to-build-an-agent)
+A lightweight agent for automated code editing and manipulation tasks. From the ["How to Build An Agent" tutorial](https://ampcode.com/how-to-build-an-agent) by Thorsten Bell 
 
 ## Overview
 
