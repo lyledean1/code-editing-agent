@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -270,49 +269,79 @@ func EditFile(input json.RawMessage) (string, error) {
 	editFileInput := EditFileInput{}
 	err := json.Unmarshal(input, &editFileInput)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to unmarshal input: %w", err)
 	}
 
-	if editFileInput.Path == "" || editFileInput.OldStr == editFileInput.NewStr {
-		return "", fmt.Errorf("invalid input parameters")
+	if editFileInput.Path == "" {
+		return "", fmt.Errorf("path parameter is required")
 	}
 
+	if editFileInput.OldStr == editFileInput.NewStr {
+		return "", fmt.Errorf("old_str and new_str must be different")
+	}
+
+	// Check if the file exists
 	content, err := os.ReadFile(editFileInput.Path)
 	if err != nil {
+		// If the file doesn't exist and old_str is empty, create a new file
 		if os.IsNotExist(err) && editFileInput.OldStr == "" {
 			return createNewFile(editFileInput.Path, editFileInput.NewStr)
 		}
-		return "", err
+		return "", fmt.Errorf("failed to read file: %w", err)
 	}
 
+	// If we get here, the file exists, so we're editing an existing file
 	oldContent := string(content)
 	newContent := strings.Replace(oldContent, editFileInput.OldStr, editFileInput.NewStr, -1)
 
 	if oldContent == newContent && editFileInput.OldStr != "" {
-		return "", fmt.Errorf("old_str not found in file")
+		return "", fmt.Errorf("old_str '%s' not found in file", editFileInput.OldStr)
 	}
 
 	err = os.WriteFile(editFileInput.Path, []byte(newContent), 0644)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to write file: %w", err)
 	}
 
-	return "OK", nil
+	if editFileInput.OldStr == "" {
+		return fmt.Sprintf("File content replaced successfully at %s", editFileInput.Path), nil
+	}
+	return fmt.Sprintf("Successfully updated file %s", editFileInput.Path), nil
 }
 
 func createNewFile(filePath, content string) (string, error) {
-	dir := path.Dir(filePath)
+	// Ensure the file doesn't already exist
+	_, err := os.Stat(filePath)
+	if err == nil {
+		return "", fmt.Errorf("file already exists at %s", filePath)
+	} else if !os.IsNotExist(err) {
+		return "", fmt.Errorf("error checking file status: %w", err)
+	}
+
+	// Get the directory part of the path
+	dir := filepath.Dir(filePath)
+	
+	// Check if directory exists, create if it doesn't
 	if dir != "." {
-		err := os.MkdirAll(dir, 0755)
-		if err != nil {
-			return "", fmt.Errorf("failed to create directory: %w", err)
+		// Check if directory exists
+		_, err := os.Stat(dir)
+		if os.IsNotExist(err) {
+			fmt.Printf("Creating directory: %s\n", dir)
+			err = os.MkdirAll(dir, 0755)
+			if err != nil {
+				return "", fmt.Errorf("failed to create directory %s: %w", dir, err)
+			}
+		} else if err != nil {
+			return "", fmt.Errorf("error checking directory status for %s: %w", dir, err)
 		}
 	}
 
-	err := os.WriteFile(filePath, []byte(content), 0644)
+	// Create the file
+	fmt.Printf("Creating new file: %s\n", filePath)
+	err = os.WriteFile(filePath, []byte(content), 0644)
 	if err != nil {
-		return "", fmt.Errorf("failed to create file: %w", err)
+		return "", fmt.Errorf("failed to create file %s: %w", filePath, err)
 	}
 
-	return fmt.Sprintf("Successfully created file %s", filePath), nil
+	return fmt.Sprintf("Successfully created new file %s", filePath), nil
 }
