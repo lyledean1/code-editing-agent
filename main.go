@@ -248,11 +248,11 @@ func ListFiles(input json.RawMessage) (string, error) {
 
 var EditFileDefinition = ToolDefinition{
 	Name: "edit_file",
-	Description: `Make edits to a text file.
+	Description: `Make edits to a text file or create a new file.
 
 Replaces 'old_str' with 'new_str' in the given file. 'old_str' and 'new_str' MUST be different from each other.
 
-If the file specified with path doesn't exist, it will be created.
+To create a new file, specify a path for a file that doesn't exist and use an empty string for 'old_str'. The 'new_str' will be the entire content of the new file.
 `,
 	InputSchema: EditFileInputSchema,
 	Function:    EditFile,
