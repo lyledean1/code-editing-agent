@@ -1,6 +1,6 @@
 module agent
 
-go 1.23.5
+go 1.24.2
 
 require (
 	github.com/anthropics/anthropic-sdk-go v0.2.0-beta.3

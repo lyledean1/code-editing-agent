@@ -2,6 +2,7 @@ package agent
 
 import (
 	"agent/tools"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,17 +14,20 @@ type Agent struct {
 	client         *anthropic.Client
 	getUserMessage func() (string, bool)
 	tools          []tools.ToolDefinition
+	debug          bool
 }
 
 func NewAgent(
 	client *anthropic.Client,
 	getUserMessage func() (string, bool),
 	tools []tools.ToolDefinition,
+	debug bool,
 ) *Agent {
 	return &Agent{
 		client:         client,
 		getUserMessage: getUserMessage,
 		tools:          tools,
+		debug:          debug,
 	}
 }
 
@@ -53,7 +57,9 @@ func (a *Agent) Run(ctx context.Context) error {
 
 		toolResults := []anthropic.ContentBlockParamUnion{}
 		for _, content := range message.Content {
+			a.printJsonMessage(content)
 			switch content.Type {
+
 			case "text":
 				fmt.Printf("\u001b[93mClaude\u001b[0m: %s\n", content.Text)
 			case "tool_use":
@@ -70,6 +76,18 @@ func (a *Agent) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (a *Agent) printJsonMessage(content anthropic.ContentBlockUnion) {
+	if !a.debug {
+		return
+	}
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, []byte(content.RawJSON()), "", "  "); err == nil {
+		fmt.Printf("%s\n", prettyJSON.String())
+		return
+	}
+	fmt.Printf("%v\n", content.JSON)
 }
 
 func (a *Agent) executeTool(id, name string, input json.RawMessage) anthropic.ContentBlockParamUnion {

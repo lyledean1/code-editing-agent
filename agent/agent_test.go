@@ -30,7 +30,7 @@ func TestNewAgent(t *testing.T) {
 	getUserMessage := func() (string, bool) { return "", true }
 	mockTools := []tools.ToolDefinition{tools.ReadFileDefinition}
 
-	agent := NewAgent(mockClient, getUserMessage, mockTools)
+	agent := NewAgent(mockClient, getUserMessage, mockTools, false)
 	assert.NotNil(t, agent)
 	assert.Equal(t, mockClient, agent.client)
 	assert.Equal(t, mockTools, agent.tools)
@@ -51,7 +51,7 @@ func TestExecuteTool(t *testing.T) {
 		},
 	}
 
-	agent := NewAgent(mockClient, getUserMessage, []tools.ToolDefinition{mockToolDef})
+	agent := NewAgent(mockClient, getUserMessage, []tools.ToolDefinition{mockToolDef}, false)
 
 	result := agent.executeTool("tool-123", "mock_tool", json.RawMessage(`{}`))
 	expected := anthropic.NewToolResultBlock("tool-123", "mock result", false)
@@ -61,7 +61,7 @@ func TestExecuteTool(t *testing.T) {
 func TestExecuteToolNotFound(t *testing.T) {
 	mockClient := &anthropic.Client{}
 	getUserMessage := func() (string, bool) { return "", true }
-	agent := NewAgent(mockClient, getUserMessage, []tools.ToolDefinition{})
+	agent := NewAgent(mockClient, getUserMessage, []tools.ToolDefinition{}, false)
 	result := agent.executeTool("tool-123", "non_existent_tool", json.RawMessage(`{}`))
 	expected := anthropic.NewToolResultBlock("tool-123", "tool not found", true)
 	assert.Equal(t, expected, result)
