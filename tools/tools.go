@@ -153,20 +153,38 @@ func EditFile(input json.RawMessage) (string, error) {
 	}
 
 	// Check if the file exists
-	content, err := os.ReadFile(editFileInput.Path)
-	if err != nil {
+	_, err = os.Stat(editFileInput.Path)
+	if os.IsNotExist(err) {
 		// If the file doesn't exist and old_str is empty, create a new file
-		if os.IsNotExist(err) && editFileInput.OldStr == "" {
+		if editFileInput.OldStr == "" {
 			return createNewFile(editFileInput.Path, editFileInput.NewStr)
 		}
-		return "", fmt.Errorf("failed to read file: %w", err)
+		return "", fmt.Errorf("file does not exist: %s", editFileInput.Path)
+	} else if err != nil {
+		return "", fmt.Errorf("failed to check file: %w", err)
 	}
 
 	// If we get here, the file exists, so we're editing an existing file
+	content, err := os.ReadFile(editFileInput.Path)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %w", err)
+	}
+
 	oldContent := string(content)
+	
+	// Special case for empty files or complete file replacement
+	if oldContent == "" || editFileInput.OldStr == "" {
+		err = os.WriteFile(editFileInput.Path, []byte(editFileInput.NewStr), 0644)
+		if err != nil {
+			return "", fmt.Errorf("failed to write file: %w", err)
+		}
+		return fmt.Sprintf("Successfully updated file %s with new content", editFileInput.Path), nil
+	}
+
+	// Normal replacement case
 	newContent := strings.Replace(oldContent, editFileInput.OldStr, editFileInput.NewStr, -1)
 
-	if oldContent == newContent && editFileInput.OldStr != "" {
+	if oldContent == newContent {
 		return "", fmt.Errorf("old_str '%s' not found in file", editFileInput.OldStr)
 	}
 
@@ -175,9 +193,6 @@ func EditFile(input json.RawMessage) (string, error) {
 		return "", fmt.Errorf("failed to write file: %w", err)
 	}
 
-	if editFileInput.OldStr == "" {
-		return fmt.Sprintf("File content replaced successfully at %s", editFileInput.Path), nil
-	}
 	return fmt.Sprintf("Successfully updated file %s", editFileInput.Path), nil
 }
 
