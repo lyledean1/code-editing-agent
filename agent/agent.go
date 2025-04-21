@@ -15,7 +15,6 @@ type Agent struct {
 	tools          []tools.ToolDefinition
 }
 
-// And here:
 func NewAgent(
 	client *anthropic.Client,
 	getUserMessage func() (string, bool),

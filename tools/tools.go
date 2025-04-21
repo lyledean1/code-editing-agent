@@ -152,10 +152,8 @@ func EditFile(input json.RawMessage) (string, error) {
 		return "", fmt.Errorf("old_str and new_str must be different")
 	}
 
-	// Check if the file exists
 	_, err = os.Stat(editFileInput.Path)
 	if os.IsNotExist(err) {
-		// If the file doesn't exist and old_str is empty, create a new file
 		if editFileInput.OldStr == "" {
 			return createNewFile(editFileInput.Path, editFileInput.NewStr)
 		}
@@ -164,15 +162,13 @@ func EditFile(input json.RawMessage) (string, error) {
 		return "", fmt.Errorf("failed to check file: %w", err)
 	}
 
-	// If we get here, the file exists, so we're editing an existing file
 	content, err := os.ReadFile(editFileInput.Path)
 	if err != nil {
 		return "", fmt.Errorf("failed to read file: %w", err)
 	}
 
 	oldContent := string(content)
-	
-	// Special case for empty files or complete file replacement
+
 	if oldContent == "" || editFileInput.OldStr == "" {
 		err = os.WriteFile(editFileInput.Path, []byte(editFileInput.NewStr), 0644)
 		if err != nil {
@@ -181,7 +177,6 @@ func EditFile(input json.RawMessage) (string, error) {
 		return fmt.Sprintf("Successfully updated file %s with new content", editFileInput.Path), nil
 	}
 
-	// Normal replacement case
 	newContent := strings.Replace(oldContent, editFileInput.OldStr, editFileInput.NewStr, -1)
 
 	if oldContent == newContent {
@@ -197,7 +192,6 @@ func EditFile(input json.RawMessage) (string, error) {
 }
 
 func createNewFile(filePath, content string) (string, error) {
-	// Ensure the file doesn't already exist
 	_, err := os.Stat(filePath)
 	if err == nil {
 		return "", fmt.Errorf("file already exists at %s", filePath)
@@ -205,12 +199,9 @@ func createNewFile(filePath, content string) (string, error) {
 		return "", fmt.Errorf("error checking file status: %w", err)
 	}
 
-	// Get the directory part of the path
 	dir := filepath.Dir(filePath)
 
-	// Check if directory exists, create if it doesn't
 	if dir != "." {
-		// Check if directory exists
 		_, err := os.Stat(dir)
 		if os.IsNotExist(err) {
 			fmt.Printf("Creating directory: %s\n", dir)
@@ -223,7 +214,6 @@ func createNewFile(filePath, content string) (string, error) {
 		}
 	}
 
-	// Create the file
 	fmt.Printf("Creating new file: %s\n", filePath)
 	err = os.WriteFile(filePath, []byte(content), 0644)
 	if err != nil {
